@@ -1,0 +1,223 @@
+---
+title: "Shiny_Assignment_2"
+author: "Aravind_Kaliappan"
+date: "October 26, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+### Importing the Required Libraries
+library(shiny)
+library(tidyverse)
+library(readxl)
+library(dplyr)
+library(tidyr)
+library(readr)
+library(ggplot2)
+library(corrplot)
+library(leaflet)
+
+## Setting the Path
+getwd()
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+### Data Preperation
+data <- read_csv("Chicago_Crimes_2018.csv")
+
+data$Month<- substr(data$Date,1,2)
+data$hour<- substr(data$Date,12,13)
+data$meridiem <- substr(data$Date,21,22)
+data$hour_of_day<-paste(data$hour,data$meridiem)
+data$day<-substr(data$Date,1,10)
+
+data$LocDesc <- as.character(data$`Location Description`)
+data$LocDesc <- ifelse(data$LocDesc %in% c("AIRCRAFT" , "AIRPORT BUILDING NON-TERMINAL - NON-SECURE AREA", "AIRPORT BUILDING NON-TERMINAL - SECURE AREA", "AIRPORT EXTERIOR -NON-SECURE AREA", "AIRPORT EXTERIOR - SECURE AREA", "AIRPORT PARKING LOT", "AIRPORT TERMINAL LOWER LEVEL - NON-SECURE AREA", "AIRPORT TERMINAL LOWER LEVEL - SECURE AREA", "AIRPORT TERMINAL MEZZANINE - NON-SECURE AREA", "AIRPORT TERMINAL UPPER LEVEL - NON-SECURE AREA", "AIRPORT TERMINAL UPPER LEVEL - SECURE AREA", "AIRPORT TRANSPORTATTION SYSTEM (ATS)","AIRPORT VENDING ESTABLISHMENT", "AIRPORT/AIRCRAFT", "AIRPORT EXTERIOR - NON-SECURE AREA", "AIRPORT TRANSPORTATION SYSTEM (ATS)"), "AVIATION" , data$LocDesc)
+
+data$LocDesc <- ifelse(data$LocDesc %in% c("ATM (AUTOMATIC TELLER MACHINE)", "BANK", "CURRENCY EXCHANGE","CREDIT UNION", "CURRENCY EXCHANGE", "SAVINGS AND LOAN" ), "BANK", data$LocDesc)
+
+data$LocDesc <- ifelse(data$LocDesc %in% c('""', "ABANDONED BUILDING", "ALLEY", "ANIMAL HOSPITAL", "APARTMENT", "APPLIANCE STORE", "ATHLETIC CLUB", "BAR OR TAVERN", "BARBER SHOP/BEAUTY SALON", "BARBERSHOP", "BASEMENT", "BOWLING ALLEY", "CHA APARTMENT", "CHA APARTMENT", "CHA PARKING LOT", "CHA HALLWAY/STAIRWELL/ELEVATOR", "CHA PARKING LOT/GROUNDS", "WAREHOUSE"), "BUILDINGS" , data$LocDesc)
+
+data$LocDesc <- ifelse(data$LocDesc %in% c("CEMETARY", "CHURCH PROPERTY", "CHURCH/SYNAGOGUE/PLACE OF WORSHIP"), "CHURCHES", data$LocDesc)
+
+data$LocDesc <- ifelse(data$LocDesc %in% c( "PUBLIC HIGH SCHOOL","COLLEGE/UNIVERSITY GROUNDS","COLLEGE/UNIVERSITY RESIDENCE HALL", "SCHOOL YARD", "SCHOOL, PRIVATE, BUILDING", "SCHOOL, PRIVATE, GROUNDS", "SCHOOL, PUBLIC, BUILDING", "SCHOOL, PUBLIC, GROUNDS", "LIBRARY" ), "SCHOOL", data$LocDesc)
+
+data$LocDesc <- ifelse(data$LocDesc %in% c("CTA \"\"L\"\" PLATFORM","CTA \"\"L\"\" TRAIN","CTA BUS", "CTA BUS STOP", "CTA GARAGE / OTHER PROPERTY", "CTA PLATFORM", "CTA STATION", "CTA TRACKS - RIGHT OF WAY", "CTA TRAIN","OTHER RAILROAD PROP / TRAIN DEPOT", "OTHER COMMERCIAL TRANSPORTATION" , "RAILROAD PROPERTY"), "PUBTRANS", data$LocDesc)
+
+data$LocDesc <- ifelse(data$LocDesc %in% c("TAXICAB","TRUCK", "VEHICLE - DELIVERY TRUCK","VEHICLE - OTHER RIDE SERVICE","VEHICLE NON-COMMERCIAL", "VEHICLE-COMMERCIAL","GAS STATION DRIVE/PROP.", "TAXI CAB", "CAR WASH", "AUTO", "DELIVERY TRUCK", "GARAGE/AUTO REPAIR", "PARKING LOT" ), "VEHICLE", data$LocDesc)
+
+data$LocDesc <- ifelse(data$LocDesc %in% c("RESIDENCE", "RESIDENCE PORCH/HALLWAY","RESIDENCE-GARAGE", "RESIDENTIAL YARD (FRONT/BACK)","GARAGE", "HOUSE", "DRIVEWAY - RESIDENTIAL", "YARD" , "DRIVEWAY", "PORCH", "STAIRWELL"), "RESIDENCE", data$LocDesc)
+
+data$LocDesc <- ifelse(data$LocDesc %in% c("FACTORY/MANUFACTURING BUILDING","FEDERAL BUILDING","FIRE STATION", "GOVERNMENT BUILDING","POLICE FACILITY/VEH PARKING LOT", "GOVERNMENT BUILDING/PROPERTY" ,"JAIL / LOCK-UP FACILITY", "PARK PROPERTY"), "GOVBUILD", data$LocDesc)
+
+data$LocDesc <- ifelse(data$LocDesc %in% c("MOVIE HOUSE/THEATER", "SPORTS ARENA/STADIUM", "POOL ROOM" ), "RECREATION", data$LocDesc)
+
+data$LocDesc <- ifelse(data$LocDesc %in% c("NURSING HOME", "NURSING HOME/RETIREMENT HOME","PARKING LOT/GARAGE(NON.RESID.)", "DAY CARE CENTER", "HOSPITAL BUILDING/GROUNDS", "HOSPITAL", "MEDICAL/DENTAL OFFICE" ), "HOSPITAL", data$LocDesc)
+
+data$LocDesc <- ifelse(data$LocDesc %in% c("COMMERCIAL / BUSINESS OFFICE","CLEANING STORE", "CONVENIENCE STORE", "DEPARTMENT STORE", "DRUG STORE", "GROCERY FOOD STORE",  "SMALL RETAIL STORE","TAVERN/LIQUOR STORE" ,"PAWN SHOP", "LIQUOR STORE" , "RETAIL STORE"), "STORES", data$LocDesc)
+
+data$LocDesc <- ifelse(data$LocDesc %in% c("BOAT/WATERCRAFT","LAGOON", "LAKEFRONT/WATERFRONT/RIVERBANK", "POOLROOM" ), "WATER", data$LocDesc)
+
+data$LocDesc <- ifelse(data$LocDesc %in% c("HOTEL", "HOTEL/MOTEL","MOTEL"  ), "HOTEL", data$LocDesc)
+
+data$LocDesc <- ifelse(data$LocDesc %in% c("EXPRESSWAY EMBANKMENT", "HIGHWAY/EXPRESSWAY", "GAS STATION", "SIDEWALK", "CONSTRUCTION SITE", "BRIDGE"), "HIGHWAY", data$LocDesc)
+
+data$LocDesc <- ifelse(data$LocDesc %in% c("CLEANERS/LAUNDROMAT", "COIN OPERATED MACHINE","LAUNDRY ROOM", "NEWSSTAND" ), "VENDING", data$LocDesc)
+
+data$LocDesc <- ifelse(data$LocDesc %in% c("VACANT LOT", "VACANT LOT/LAND" , "STREET", "DRIVEWAY", "GANGWAY", "VESTIBULE"), "STREET", data$LocDesc)
+data$LocDesc <- ifelse(data$LocDesc %in% c(""), "OTHER", data$LocDesc)
+data$LocDesc<-ifelse(data$LocDesc %in% c("VEHICLE - OTHER RIDE SHARE SERVICE (E.G., UBER, LYFT)",
+                                             "VEHICLE-COMMERCIAL - ENTERTAINMENT/PARTY BUS",
+                                             "VEHICLE-COMMERCIAL - TROLLEY BUS","VEHICLE"),"VEHICLE",data$LocDesc )
+### Preparing the Subsets 
+
+
+
+## Subset for Tab 1
+a <- data %>%
+  group_by(data$`Primary Type`,data$Month) %>%
+  tally() 
+names(a)[1]<-"crime"
+names(a)[2]<-"month"
+names(a)[3]<-"count"
+
+## Subset for Tab 2
+b<- data %>%
+  group_by(data$LocDesc) %>%
+  tally()
+names(b)[1]<-"location"
+names(b)[2]<-"count"
+
+## Subset for Tab 3
+c <- data %>%
+  group_by(data$hour_of_day,data$`Primary Type`) %>%
+  tally()
+names(c)[1]<- "hr"
+names(c)[2]<- "crime"
+names(c)[3]<- "count"
+c$hour<-0
+c$hour<- ifelse(c$hr%in%c("01 AM"),1,c$hour)
+c$hour<- ifelse(c$hr%in%c("02 AM"),2,c$hour)
+c$hour<- ifelse(c$hr%in%c("03 AM"),3,c$hour)
+c$hour<- ifelse(c$hr%in%c("04 AM"),4,c$hour)
+c$hour<- ifelse(c$hr%in%c("05 AM"),5,c$hour)
+c$hour<- ifelse(c$hr%in%c("06 AM"),6,c$hour)
+c$hour<- ifelse(c$hr%in%c("07 AM"),7,c$hour)
+c$hour<- ifelse(c$hr%in%c("08 AM"),8,c$hour)
+c$hour<- ifelse(c$hr%in%c("09 AM"),9,c$hour)
+c$hour<- ifelse(c$hr%in%c("10 AM"),10,c$hour)
+c$hour<- ifelse(c$hr%in%c("11 AM"),11,c$hour)
+c$hour<- ifelse(c$hr%in%c("12 AM"),12,c$hour)
+c$hour<- ifelse(c$hr%in%c("01 PM"),13,c$hour)
+c$hour<- ifelse(c$hr%in%c("02 PM"),14,c$hour)
+c$hour<- ifelse(c$hr%in%c("03 PM"),15,c$hour)
+c$hour<- ifelse(c$hr%in%c("04 PM"),16,c$hour)
+c$hour<- ifelse(c$hr%in%c("05 PM"),17,c$hour)
+c$hour<- ifelse(c$hr%in%c("06 PM"),18,c$hour)
+c$hour<- ifelse(c$hr%in%c("07 PM"),19,c$hour)
+c$hour<- ifelse(c$hr%in%c("08 PM"),20,c$hour)
+c$hour<- ifelse(c$hr%in%c("09 PM"),21,c$hour)
+c$hour<- ifelse(c$hr%in%c("10 PM"),22,c$hour)
+c$hour<- ifelse(c$hr%in%c("11 PM"),23,c$hour)
+c$hour<- ifelse(c$hr%in%c("12 PM"),24,c$hour)
+
+###  Shiny App
+
+ui <-fluidPage(
+  titlePanel("Chicago Crimes Data Analysis"),
+  mainPanel(
+tabsetPanel( type ="tabs",
+tabPanel("Tab1",
+             sidebarLayout(
+               sidebarPanel = (selectInput("Crime", label="Crime_type", choices =a$crime,
+                                           selected = ""
+                 
+               )
+               ),
+               plotOutput("plot1")
+             )
+    ),
+tabPanel("Tab2",
+             
+               plotOutput("plot2")
+             
+    ),
+tabPanel("Tab3",
+         sidebarLayout(
+               sidebarPanel = (selectInput("Heat",label="Crime_Type", choices =c$crime,
+                                           selected = ""
+                 
+               )
+               ),
+               plotOutput("plot3")
+             )
+         ),
+tabPanel("Tab4",
+         leafletOutput("mymap"),
+  actionButton("recalc", "New points"),
+  sidebarLayout(
+               sidebarPanel = (selectInput("Map",label="Select Day", choices =data$day,
+                                           selected = ""
+                 
+               )
+               ),
+               plotOutput("plot4")
+             )
+  
+)
+
+)
+
+)
+)
+server <- function(input,output){
+  output$plot1 <- renderPlot({
+    out <-filter(a, crime==input$Crime)
+    ggplot(data=out,aes(x=out$month,y=out$count))+xlab("Months")+ ylab("Count")+ggtitle("Frequency of  Crime across the Year")+geom_bar(stat="identity")
+  }  )
+  output$plot2 <- renderPlot({
+    ggplot(data=b,aes(x=b$location,y=b$count))+xlab("Locations")+ ylab("Count")+ggtitle("Frequency of Crime in various Locations")+geom_bar(stat="identity")+ theme(axis.text.x = element_text(angle=90))
+  }  )
+  output$plot3 <- renderPlot({
+    out1 <-filter(c, crime==input$Heat)
+    ggplot(data = out1, mapping = aes(x = out1$crime, y = out1$hour, fill = out1$count))+xlab("Crime")+ylab(" 24-Hr") +ggtitle("Heatmap of Frequency of Crime through out the day")+
+  geom_tile()
+  }
+    
+  )
+  output$mymap <- renderLeaflet({
+    out2<-filter(data, day==input$Map)
+    leaflet(data = out2) %>% addTiles() %>%addControl("Location of Crimes", position = "bottomleft")%>%
+  addMarkers(~out2$Longitude, ~out2$Latitude,label = paste("ID:", out2$ID, "<br>",
+                           "Case Number:", out2$`Case Number`, "<br>",
+                           "Primary Type:", out2$`Primary Type`, "<br>",
+                           "Description:", out2$Description))
+  })
+}
+shinyApp(ui = ui, server = server)
+
+
+
+
+
+
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
