@@ -1,0 +1,9 @@
+### Performing Prediction of Number of All NBA Team Selection Award won by Selected Players 
+
+### Please download all the below mentioned files 
+  i). ALL.NBA.1984-2018.csv
+  ii).Seasons_Stats.csv
+  iii).Final_code.ipynb
+in the same folder 
+
+### After savind the files in same folder, Please run the code
